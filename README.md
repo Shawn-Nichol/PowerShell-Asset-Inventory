@@ -1,13 +1,10 @@
 # PowerShell Asset Inventory
-[![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?style=for-the-badge&logo=powershell&logoColor=white)](https://github.com/Shawn-Nichol/PowerShell-Asset-Inventory)
-[![OS](https://img.shields.io/badge/OS-Windows_Server_%7C_10_%7C_11-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/Shawn-Nichol/PowerShell-Asset-Inventory)
-[![Output](https://img.shields.io/badge/Output-CSV_Reports-green?style=for-the-badge&logo=microsoftcsv&logoColor=white)](https://github.com/Shawn-Nichol/PowerShell-Asset-Inventory)
-[![Repo Size](https://img.shields.io/github/repo-size/Shawn-Nichol/PowerShell-Asset-Inventory?style=for-the-badge&color=orange)](https://github.com/Shawn-Nichol/PowerShell-Asset-Inventory)
-
 
 ![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-blue?logo=powershell&logoColor=white)
 ![Platform](https://img.shields.io/badge/Platform-Windows-0078D6?logo=windows&logoColor=white)
-![License](https://img.shields.io/github/license/Shawn-Nichol/PowerShell-Asset-Inventory?color=brightgreen)
+![Protocol](https://img.shields.io/badge/Protocol-WinRM%20%7C%20CIM-00599E)
+![Output](https://img.shields.io/badge/Output-CSV_Reports-green?logo=microsoftcsv&logoColor=white)
+![Discovery](https://img.shields.io/badge/Discovery-Sentinel_HASP_%7C_Burli-purple)
 
 
 A PowerShell-based asset inventory and application auditing tool for Windows environments. The script remotely scans workstations and servers, discovers installed applications, gathers licensing and system information, and exports the results into a structured CSV report.
