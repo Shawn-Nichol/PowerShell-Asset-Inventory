@@ -39,23 +39,24 @@ Many organizations have specialized software, licensing dongles, virtual machine
 
 The script generates a timestamped CSV containing the following information:
 
+- Computer Name
+- On-Air or Office Location
+- Operating System
+- Hardware Type (VM or physical model)
+- Primary User or Service Account
+- Static IP or DHCP
+- Wheatstone Connectivity
 - Application Name
+- Software Version
 - Functionality
 - End User / Server / Service Classification
 - Service or Application Type
 - Executable Name
-- Software Version
 - Licensing Information
 - HASP ID
-- Computer Name
-- Operating System
-- Primary User or Service Account
-- Hardware Type
-- Network Information
-- Wheatstone Connectivity
-- Engineering Notes
+- Notes
 
-The resulting report provides a clean, one-row-per-application inventory that can be used for audits, software lifecycle planning, licensing reviews, infrastructure assessments, and migration projects.
+Rows are sorted by computer, then application. The resulting report provides a clean, one-row-per-application inventory that can be used for audits, software lifecycle planning, licensing reviews, infrastructure assessments, and migration projects.
 
 ## Getting Started
 

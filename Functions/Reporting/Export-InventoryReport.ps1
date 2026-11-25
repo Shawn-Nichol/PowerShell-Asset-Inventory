@@ -22,7 +22,10 @@ function Export-InventoryReport
 
     # Remoting adds PSComputerName, RunspaceId and PSShowComputerName to
     # every returned object; they are not report columns.
+    # Rows are sorted by computer, then application, so each computer's
+    # applications are grouped together.
     $Records |
+        Sort-Object -Property 'Server / Workstation Name', 'Application Name' |
         Select-Object -Property * -ExcludeProperty PSComputerName, RunspaceId, PSShowComputerName |
         Export-Csv -Path $FilePath -NoTypeInformation
 

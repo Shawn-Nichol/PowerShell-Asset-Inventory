@@ -25,21 +25,21 @@ function New-AuditRecord
     )
 
     [PSCustomObject]@{
+        'Server / Workstation Name'                     = $Base.ComputerName
+        'On-Air or Office'                              = $Base.Location
+        'OS'                                            = $Base.OS
+        'VM / BM / HW'                                  = $Base.MachineType
+        'Primary User / Service Account Name'           = $Base.PrimaryUser
+        'Static IP or DHCP'                             = $Base.AddressType
+        'Wheatstone'                                    = $Base.WheatstoneIP
         'Application Name'                              = $ApplicationName
+        'Version'                                       = $Version
         'Functionality'                                 = $Functionality
         'End User / Server / Service'                   = $UserType
         'Service / App'                                 = $ServiceType
         'Executable / startup'                          = $Executable
-        'Version'                                       = $Version
         'Network HASP, Dedicated HASP, by File (codes)' = $LicenseType
         'Hasp ID'                                       = $HaspID
-        'Server / Workstation Name'                     = $Base.ComputerName
-        'OS'                                            = $Base.OS
-        'Primary User / Service Account Name'           = $Base.PrimaryUser
-        'VM / BM / HW'                                  = $Base.MachineType
-        'On-Air or Office'                              = $Base.Location
-        'Static IP or DHCP'                             = $Base.AddressType
-        'Wheatstone'                                    = $Base.WheatstoneIP
         'Notes'                                         = $Notes
     }
 }
