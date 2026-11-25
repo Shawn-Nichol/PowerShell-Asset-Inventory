@@ -99,6 +99,139 @@ Functions\                 One small function per file
 
 Settings are PowerShell data files (`.psd1`) loaded with `Import-PowerShellDataFile`, which reads them as data and never executes them. The functions are packaged into a single script block and sent with `Invoke-Command`, so nothing needs to be installed on the target computers, and all reachable targets are audited in parallel.
 
+## How It Works
+
+### Overall flow
+
+`Start-Inventory.ps1` loads the settings, checks each computer, collects the rows and exports the report. The status of each computer decides which path it takes.
+
+```mermaid
+flowchart TD
+    Start(["Start-Inventory.ps1"])
+
+    subgraph Config["Config folder"]
+        Apps[("Applications.psd1")]
+        Net[("Network.psd1")]
+        List[("Computers.txt")]
+    end
+
+    subgraph Setup["1. Setup"]
+        Import["Import-InventorySettings"]
+        Targets["Get-TargetComputer"]
+        Default["Get-ValueOrDefault"]
+        Package["New-RemoteScript<br/>packages Functions into one script block"]
+    end
+
+    subgraph Check["2. Check each computer"]
+        Status["Get-ComputerStatus"]
+        IsLocal["Test-IsLocalComputer"]
+        WinRM["Test-WinRM"]
+        Repair["Repair-WinRM<br/>only with -RepairWinRM"]
+    end
+
+    subgraph Collect["3. Collect rows"]
+        LocalRun["Get-ComputerInventory<br/>runs directly on this computer"]
+        Remoting["Invoke-InventoryRemoting<br/>runs on all ready computers in parallel"]
+        StatusRec["New-StatusRecord<br/>row explaining why a computer was skipped"]
+    end
+
+    subgraph Output["4. Output"]
+        Export["Export-InventoryReport"]
+        Csv[("Output folder<br/>AssetInventory-date.csv")]
+        Summary["Write-InventorySummary"]
+    end
+
+    Start --> Setup
+    Apps --> Import
+    Net --> Import
+    List --> Targets
+    Import --> Default
+    Targets --> Default
+
+    Setup --> Status
+    Status --> IsLocal
+    Status --> WinRM
+    Status --> Repair
+    Repair --> WinRM
+
+    Status -->|Local| LocalRun
+    Status -->|Ready| Remoting
+    Status -->|Offline or WinRM unavailable| StatusRec
+    Remoting -->|computer returned nothing| StatusRec
+    Package -.->|script block| LocalRun
+    Package -.->|script block| Remoting
+
+    LocalRun --> Export
+    Remoting --> Export
+    StatusRec --> Export
+    Export --> Csv
+    Export --> Summary
+```
+
+### What runs on each computer
+
+`Get-ComputerInventory` is the function sent to every target. It gathers the machine details once, then builds one row per tracked application. If nothing matches it returns a "No tracked applications found" row, and if anything fails it returns an error row, so every computer appears in the report.
+
+```mermaid
+flowchart TD
+    Inv(["Get-ComputerInventory"])
+
+    Inv --> Machine["Get-MachineInfo<br/>details shared by every row"]
+    Machine --> Sys["Get-SystemInfo<br/>OS, VM or hardware model"]
+    Machine --> NetInfo["Get-NetworkInfo<br/>DHCP or Static, On-Air or Office, Wheatstone IP"]
+    Machine --> User["Get-AutoLogonUser"]
+    Machine --> Base["New-BaseRecord"]
+
+    Inv --> Burli["Get-BurliInfo"]
+    Burli --> Hasp["Get-HaspLicenseType<br/>asks the local HASP License Manager"]
+
+    Inv --> Proc["Get-RunningProcess"]
+
+    Inv --> Installed["Get-InstalledApplication<br/>reads the Uninstall registry keys"]
+    Installed --> Find["Find-ApplicationDefinition<br/>matches against Applications.psd1"]
+
+    Inv --> AppRec["New-ApplicationRecord<br/>one per installed application"]
+    AppRec --> Exe["Get-ExecutableName"]
+    AppRec --> Audit["New-AuditRecord<br/>defines the CSV columns"]
+
+    Inv --> BurliRec["New-BurliRegistryRecord<br/>Burli found only in the registry"]
+    BurliRec --> Audit
+
+    Inv -->|no matches or error| Audit
+```
+
+### Function reference
+
+| Stage | Function | What it does |
+|---|---|---|
+| Setup | `Import-InventorySettings` | Loads `Applications.psd1` and `Network.psd1` and fills in defaults |
+| Setup | `Get-TargetComputer` | Returns computers from `-ComputerName`, `Computers.txt`, or this computer |
+| Setup | `Get-ValueOrDefault` | Returns a value, or a fallback when it is empty |
+| Setup | `New-RemoteScript` | Packages the Functions folder into one script block for remoting |
+| Check | `Get-ComputerStatus` | Returns Local, Ready, Offline or WinRM unavailable |
+| Check | `Test-IsLocalComputer` | Checks whether a name refers to this computer |
+| Check | `Test-WinRM` | Checks whether a computer answers PowerShell remoting |
+| Check | `Repair-WinRM` | Enables WinRM with PsExec (only with `-RepairWinRM`) |
+| Collect | `Invoke-InventoryRemoting` | Runs the inventory on all ready computers in parallel |
+| Collect | `New-StatusRecord` | Creates a row for a computer that could not be audited |
+| On each computer | `Get-ComputerInventory` | Audits one computer and returns its rows |
+| On each computer | `Get-MachineInfo` | Collects the details shared by every row |
+| On each computer | `Get-SystemInfo` | Returns the OS and whether it is a VM or physical hardware |
+| On each computer | `Get-NetworkInfo` | Returns DHCP or Static, On-Air or Office, and the Wheatstone IP |
+| On each computer | `Get-AutoLogonUser` | Returns the auto-logon user from Winlogon |
+| On each computer | `Get-BurliInfo` | Returns whether Burli is installed and its HASP ID |
+| On each computer | `Get-HaspLicenseType` | Returns Dedicated or Network HASP |
+| On each computer | `Get-RunningProcess` | Lists running processes and their paths |
+| On each computer | `Get-InstalledApplication` | Finds installed programs that match a tracked application |
+| On each computer | `Find-ApplicationDefinition` | Returns the first definition whose pattern matches a program name |
+| On each computer | `New-ApplicationRecord` | Builds the row for one installed application |
+| On each computer | `Get-ExecutableName` | Works out the application's main executable |
+| On each computer | `New-BurliRegistryRecord` | Adds a Burli row when Burli is only in the registry |
+| Rows | `New-BaseRecord` | Holds the machine details used in every row |
+| Rows | `New-AuditRecord` | Creates one report row; its properties define the CSV columns |
+| Output | `Export-InventoryReport` | Writes the rows to a timestamped CSV |
+| Output | `Write-InventorySummary` | Prints totals and the report location |
+
 ## Why I Built It
 
 I needed a reliable way to document application deployments, licensing dependencies, and workstation configurations across distributed Windows environments. Manual audits were time-consuming, difficult to maintain, and often inconsistent.
