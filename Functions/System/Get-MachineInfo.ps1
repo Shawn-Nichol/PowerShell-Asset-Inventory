@@ -38,7 +38,9 @@ function Get-MachineInfo
         AutoLogonEnabled = $Logon.AutoLogonEnabled
         AutoLogonUser    = $Logon.AutoLogonUser
         LastLoggedOnUser = $Logon.LastLoggedOnUser
+        IPAddress        = $NetworkInfo.IPAddress
         AddressType      = $NetworkInfo.AddressType
+        OtherIPAddresses = $NetworkInfo.OtherIPAddresses
         WheatstoneIP     = $NetworkInfo.WheatstoneIP
         SecureBoot       = $Security.SecureBoot
         Tpm              = $Security.Tpm

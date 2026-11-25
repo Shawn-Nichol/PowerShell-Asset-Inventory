@@ -1,7 +1,8 @@
 # Tracked applications (public list - committed to the repository)
 #
 # Applications that should not be published, such as security tools, go in
-# Applications.local.psd1 instead. See Applications.local.example.psd1.
+# the Applications section of Local\Settings.psd1 instead.
+# See Config\Settings.example.psd1.
 #
 # Each entry describes one application to look for in the installed programs list.
 #

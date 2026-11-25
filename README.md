@@ -54,8 +54,10 @@ The script generates a timestamped CSV containing the following information:
 - C: Drive Size and Free Space (GB)
 - Auto-Logon Enabled and Auto-Logon User
 - Last Logged-On User
+- IP Address
 - Static IP or DHCP
 - Wheatstone Connectivity
+- Other IP Addresses
 - Secure Boot, TPM and BitLocker (C:) Status
 - RDP and SMBv1 Status
 - Windows Firewall Profiles
@@ -78,15 +80,23 @@ The report can include TeamViewer IDs and user names, so treat it as sensitive a
 
 Requirements: Windows PowerShell 5.1 or later, WinRM enabled on target computers, and admin rights on the targets. PsExec is only needed for `-RepairWinRM`.
 
-1. Copy `Config\Computers.example.txt` to `Config\Computers.txt` and list your hostnames, one per line.
-2. Copy `Config\Network.example.psd1` to `Config\Network.psd1` and set your subnets.
-3. Review `Config\Applications.psd1` and add or describe the applications you want to track.
-4. Optional: for applications you don't want published, such as security tools, copy `Config\Applications.local.example.psd1` to `Config\Applications.local.psd1` and add them there. The format is the same, and its entries are checked first.
+Everything specific to your environment lives in one git-ignored `Local` folder, so you never have to edit the code:
+
+1. Create a folder named `Local` next to `Start-Inventory.ps1`.
+2. Copy `Config\Settings.example.psd1` to `Local\Settings.psd1` and set:
+   - `ComputerList`: the computer list file name (default `Computers.txt`)
+   - `Network`: your main, On-Air and Wheatstone subnets
+   - `Applications`: applications you don't want published, such as security tools
+3. Copy `Config\Computers.example.txt` to `Local\Computers.txt` and list your hostnames, one per line.
+4. Review `Config\Applications.psd1`, the public list of applications to track.
 5. Run the inventory:
 
 ```powershell
-# Audit every computer in Config\Computers.txt
+# Audit every computer in Local\Computers.txt
 .\Start-Inventory.ps1
+
+# Audit a different computer list for this run only
+.\Start-Inventory.ps1 -ComputerListPath .\Local\OnAirComputers.txt
 
 # Audit specific computers and show progress details
 .\Start-Inventory.ps1 -ComputerName STUDIO-01, STUDIO-02 -Verbose
@@ -100,18 +110,19 @@ Get-Help .\Start-Inventory.ps1 -Full
 
 Reports are saved to the `Output` folder as `AssetInventory-<date>_<time>.csv`. Every target appears in the report; computers that could not be audited get a row explaining why (Offline, WinRM unavailable, or the error message).
 
-`Computers.txt`, `Network.psd1`, `Applications.local.psd1` and `Output\` are git-ignored, so hostnames, internal subnets, privately tracked applications and reports are never committed.
+The `Local` and `Output` folders are git-ignored, so hostnames, internal subnets, privately tracked applications and reports are never committed.
 
 ## Project Structure
 
 ```
 Start-Inventory.ps1        Entry point: check each computer, collect rows, export
-Config\
+Config\                    Public, committed
   Applications.psd1        Applications to track and how to describe them
-  Applications.local.example.psd1
-                           Template for privately tracked applications (git-ignored copy)
-  Network.example.psd1     Template for environment-specific subnets
+  Settings.example.psd1    Template for Local\Settings.psd1
   Computers.example.txt    Template for the computer list
+Local\                     Internal, git-ignored (you create this)
+  Settings.psd1            Computer list name, subnets, private applications
+  Computers.txt            Computers to audit
 Functions\
   Setup\                   Settings, target list, shared helpers
   Remoting\                Computer status checks, WinRM, parallel remoting
@@ -135,10 +146,12 @@ Settings are PowerShell data files (`.psd1`) loaded with `Import-PowerShellDataF
 flowchart TD
     Start(["Start-Inventory.ps1"])
 
-    subgraph Config["Config folder"]
+    subgraph Config["Config folder (public)"]
         Apps[("Applications.psd1")]
-        LocalApps[("Applications.local.psd1<br/>optional, git-ignored")]
-        Net[("Network.psd1")]
+    end
+
+    subgraph Local["Local folder (git-ignored)"]
+        LocalSettings[("Settings.psd1<br/>subnets, private apps,<br/>computer list name")]
         List[("Computers.txt")]
     end
 
@@ -170,8 +183,8 @@ flowchart TD
 
     Start --> Setup
     Apps --> Import
-    LocalApps --> Import
-    Net --> Import
+    LocalSettings --> Import
+    LocalSettings -.->|names the list| List
     List --> Targets
     Import --> Default
     Targets --> Default
@@ -206,7 +219,7 @@ flowchart LR
 
     Inv --> Machine["Get-MachineInfo<br/>details shared by every row"]
     Machine --> Sys["Get-SystemInfo<br/>OS, VM or hardware model, time zone"]
-    Machine --> NetInfo["Get-NetworkInfo<br/>DHCP or Static, On-Air or Office, Wheatstone IP"]
+    Machine --> NetInfo["Get-NetworkInfo<br/>IP addresses, DHCP or Static,<br/>On-Air or Office, Wheatstone IP"]
     Machine --> Bios["Get-BiosInfo<br/>BIOS and serial number"]
     Machine --> Hw["Get-HardwareInfo<br/>CPU, RAM, C: drive"]
     Machine --> Logon["Get-LogonInfo<br/>auto-logon and last user"]
@@ -238,8 +251,8 @@ flowchart LR
 
 | Folder | Function | What it does |
 |---|---|---|
-| Setup | `Import-InventorySettings` | Loads `Applications.psd1`, the optional `Applications.local.psd1` and `Network.psd1`, and fills in defaults |
-| Setup | `Get-TargetComputer` | Returns computers from `-ComputerName`, `Computers.txt`, or this computer |
+| Setup | `Import-InventorySettings` | Loads `Config\Applications.psd1` and `Local\Settings.psd1`, and fills in defaults |
+| Setup | `Get-TargetComputer` | Returns computers from `-ComputerName`, the computer list, or this computer |
 | Setup | `Get-ValueOrDefault` | Returns a value, or a fallback when it is empty |
 | Remoting | `New-RemoteScript` | Packages the Functions folder into one script block for remoting |
 | Remoting | `Get-ComputerStatus` | Returns Local, Ready, Offline or WinRM unavailable |
@@ -250,7 +263,7 @@ flowchart LR
 | System | `Get-ComputerInventory` | Audits one computer and returns its rows |
 | System | `Get-MachineInfo` | Collects the details shared by every row |
 | System | `Get-SystemInfo` | Returns the OS, whether it is a VM or physical hardware, and the time zone |
-| System | `Get-NetworkInfo` | Returns DHCP or Static, On-Air or Office, and the Wheatstone IP |
+| System | `Get-NetworkInfo` | Returns the main, Wheatstone and other IPs, DHCP or Static, and On-Air or Office |
 | System | `Get-BiosInfo` | Returns the BIOS manufacturer, version, release date and serial number |
 | System | `Get-HardwareInfo` | Returns the CPU, RAM, and C: drive size and free space |
 | System | `Get-LogonInfo` | Returns auto-logon status and user, and the last logged-on user |

@@ -1,4 +1,7 @@
-# Environment-specific files (internal hostnames and subnets) - never commit
+# Internal settings, computer lists and private applications - never commit
+Local/
+
+# Older locations of internal files, kept ignored in case copies remain
 Config/Computers.txt
 Config/BroadcastComputers.txt
 Config/Network.psd1

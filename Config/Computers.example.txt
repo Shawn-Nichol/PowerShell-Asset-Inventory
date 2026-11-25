@@ -1,6 +1,7 @@
 # Computer list
-# Copy this file to Computers.txt and add one hostname per line.
-# Computers.txt is git-ignored so real hostnames are never committed.
+# Copy this file to Local\Computers.txt and add one hostname per line.
+# The Local folder is git-ignored so real hostnames are never committed.
+# To use a different file name, change ComputerList in Local\Settings.psd1.
 # Lines starting with # and blank lines are ignored.
 
 WORKSTATION-01

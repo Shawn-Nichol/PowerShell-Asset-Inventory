@@ -2,8 +2,8 @@ function Get-NetworkInfo
 {
     <#
     .SYNOPSIS
-        Returns the primary IP, addressing type, location and Wheatstone IP
-        of this computer.
+        Returns the primary IP, addressing type, location, Wheatstone IP and
+        any other IPv4 addresses of this computer.
 
     .PARAMETER PrimarySubnet
         Wildcard pattern for the main adapter's IPv4 address. When empty, or
@@ -45,10 +45,17 @@ function Get-NetworkInfo
             Select-Object -First 1
     )
 
+    # Every other address, ignoring loopback and self-assigned (169.254.x.x).
+    $OtherIPAddresses = $Adapters.IPv4Address.IPAddress |
+        Where-Object { $_ -and $_ -notin @($IPAddress, $WheatstoneIP) } |
+        Where-Object { $_ -notlike '127.*' -and $_ -notlike '169.254.*' } |
+        Sort-Object -Unique
+
     [PSCustomObject]@{
-        IPAddress    = $IPAddress
-        AddressType  = $AddressType
-        Location     = $Locations[$IsOnAir]
-        WheatstoneIP = $WheatstoneIP
+        IPAddress        = $IPAddress
+        AddressType      = $AddressType
+        Location         = $Locations[$IsOnAir]
+        WheatstoneIP     = $WheatstoneIP
+        OtherIPAddresses = @($OtherIPAddresses) -join '; '
     }
 }

@@ -21,20 +21,18 @@
     One or more computers to audit. Overrides the computer list file.
 
 .PARAMETER ComputerListPath
-    Text file with one hostname per line. Defaults to Config\Computers.txt.
-    If the file does not exist and -ComputerName is not given, only the
-    local computer is audited.
+    Text file with one hostname per line. Overrides the ComputerList setting
+    in Local\Settings.psd1 (default Local\Computers.txt). If no list exists
+    and -ComputerName is not given, only this computer is audited.
+
+.PARAMETER LocalSettingsPath
+    Internal settings for your environment: computer list file name,
+    subnets, and applications that should not be published.
+    Defaults to Local\Settings.psd1. The Local folder is git-ignored;
+    copy Config\Settings.example.psd1 there to get started.
 
 .PARAMETER ApplicationsPath
-    Data file listing the applications to track. Defaults to Config\Applications.psd1.
-
-.PARAMETER LocalApplicationsPath
-    Optional, git-ignored data file with applications that should not be
-    published (for example security tools). Same format as Applications.psd1;
-    its entries are checked first. Defaults to Config\Applications.local.psd1.
-
-.PARAMETER NetworkPath
-    Data file with environment-specific subnets. Defaults to Config\Network.psd1.
+    Public list of applications to track. Defaults to Config\Applications.psd1.
 
 .PARAMETER OutputPath
     Folder for the CSV report. Defaults to the Output folder next to this script.
@@ -49,13 +47,18 @@
 .EXAMPLE
     .\Start-Inventory.ps1
 
-    Audits every computer in Config\Computers.txt (or just this computer
-    if the file does not exist).
+    Audits every computer in the list named in Local\Settings.psd1
+    (Local\Computers.txt by default), or just this computer if there is no list.
 
 .EXAMPLE
     .\Start-Inventory.ps1 -ComputerName STUDIO-01, STUDIO-02 -Verbose
 
     Audits two computers and shows progress details.
+
+.EXAMPLE
+    .\Start-Inventory.ps1 -ComputerListPath .\Local\OnAirComputers.txt
+
+    Audits a different computer list for this run only.
 
 .EXAMPLE
     .\Start-Inventory.ps1 -RepairWinRM -Credential (Get-Credential)
@@ -69,13 +72,11 @@ param
 (
     [string[]]$ComputerName,
 
-    [string]$ComputerListPath = (Join-Path -Path $PSScriptRoot -ChildPath 'Config\Computers.txt'),
+    [string]$ComputerListPath,
+
+    [string]$LocalSettingsPath = (Join-Path -Path $PSScriptRoot -ChildPath 'Local\Settings.psd1'),
 
     [string]$ApplicationsPath = (Join-Path -Path $PSScriptRoot -ChildPath 'Config\Applications.psd1'),
-
-    [string]$LocalApplicationsPath = (Join-Path -Path $PSScriptRoot -ChildPath 'Config\Applications.local.psd1'),
-
-    [string]$NetworkPath = (Join-Path -Path $PSScriptRoot -ChildPath 'Config\Network.psd1'),
 
     [string]$OutputPath = (Join-Path -Path $PSScriptRoot -ChildPath 'Output'),
 
@@ -98,11 +99,11 @@ foreach ($File in Get-ChildItem -Path $FunctionPath -Filter '*.ps1' -Recurse)
 # into one script block that is sent along with each remote command.
 $InventoryScript = New-RemoteScript -FunctionPath $FunctionPath
 
-$Settings = Import-InventorySettings `
-    -ApplicationsPath $ApplicationsPath `
-    -LocalApplicationsPath $LocalApplicationsPath `
-    -NetworkPath $NetworkPath
-$Targets  = @(Get-TargetComputer -ComputerName $ComputerName -ListPath $ComputerListPath)
+$Settings = Import-InventorySettings -ApplicationsPath $ApplicationsPath -LocalSettingsPath $LocalSettingsPath
+
+# -ComputerListPath overrides the list named in Local\Settings.psd1.
+$ListPath = Get-ValueOrDefault -Value $ComputerListPath -Default $Settings.ComputerListPath
+$Targets  = @(Get-TargetComputer -ComputerName $ComputerName -ListPath $ListPath)
 
 Write-Host "Checking $($Targets.Count) computer(s)..." -ForegroundColor Cyan
 

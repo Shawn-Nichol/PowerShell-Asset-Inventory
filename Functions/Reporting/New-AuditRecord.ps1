@@ -51,8 +51,10 @@ function New-AuditRecord
         'Last Logged-On User'                           = $Base.LastLoggedOnUser
 
         # Network
+        'IP Address'                                    = $Base.IPAddress
         'Static IP or DHCP'                             = $Base.AddressType
         'Wheatstone'                                    = $Base.WheatstoneIP
+        'Other IP Addresses'                            = $Base.OtherIPAddresses
 
         # Security
         'Secure Boot'                                   = $Base.SecureBoot
