@@ -1,0 +1,5 @@
+# Real computer list (internal hostnames) - never commit
+Config/BroadcastComputers.txt
+
+# Generated reports
+Output/

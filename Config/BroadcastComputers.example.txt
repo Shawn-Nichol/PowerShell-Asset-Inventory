@@ -1,0 +1,7 @@
+# Broadcast Audit computer list
+# Copy this file to BroadcastComputers.txt and add one hostname per line.
+# BroadcastComputers.txt is git-ignored so real hostnames are never committed.
+# Lines starting with # and blank lines are ignored.
+
+WORKSTATION-01
+SERVER-01
