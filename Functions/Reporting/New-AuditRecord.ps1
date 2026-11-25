@@ -52,6 +52,8 @@ function New-AuditRecord
 
         # Network
         'IP Address'                                    = $Base.IPAddress
+        'Subnet Mask'                                   = $Base.SubnetMask
+        'Default Gateway'                               = $Base.DefaultGateway
         'Static IP or DHCP'                             = $Base.AddressType
         'Wheatstone'                                    = $Base.WheatstoneIP
         'Other IP Addresses'                            = $Base.OtherIPAddresses

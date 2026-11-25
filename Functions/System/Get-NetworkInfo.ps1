@@ -2,8 +2,8 @@ function Get-NetworkInfo
 {
     <#
     .SYNOPSIS
-        Returns the primary IP, addressing type, location, Wheatstone IP and
-        any other IPv4 addresses of this computer.
+        Returns the primary IP, subnet mask, default gateway, addressing type,
+        location, Wheatstone IP and any other IPv4 addresses of this computer.
 
     .PARAMETER PrimarySubnet
         Wildcard pattern for the main adapter's IPv4 address. When empty, or
@@ -33,6 +33,15 @@ function Get-NetworkInfo
 
     $IPAddress = [string](@($PrimaryAdapter.IPv4Address.IPAddress) | Select-Object -First 1)
 
+    # Subnet mask from the prefix length, e.g. 24 -> 255.255.255.0 (/24).
+    $PrefixLength = [int](@($PrimaryAdapter.IPv4Address.PrefixLength) | Select-Object -First 1)
+    $MaskBits     = ('1' * $PrefixLength).PadRight(32, '0')
+    $MaskOctets   = 0..3 | ForEach-Object { [Convert]::ToInt32($MaskBits.Substring($_ * 8, 8), 2) }
+    $SubnetMasks  = @{ $true = '{0} (/{1})' -f ($MaskOctets -join '.'), $PrefixLength; $false = '' }
+    $SubnetMask   = $SubnetMasks[$PrefixLength -gt 0]
+
+    $DefaultGateway = @($PrimaryAdapter.IPv4DefaultGateway.NextHop | Where-Object { $_ }) -join '; '
+
     $AddressTypes = @{ 'Enabled' = 'DHCP'; 'Disabled' = 'Static' }
     $AddressType  = [string]$AddressTypes["$($PrimaryAdapter.NetIPv4Interface.Dhcp)"]
 
@@ -53,6 +62,8 @@ function Get-NetworkInfo
 
     [PSCustomObject]@{
         IPAddress        = $IPAddress
+        SubnetMask       = $SubnetMask
+        DefaultGateway   = $DefaultGateway
         AddressType      = $AddressType
         Location         = $Locations[$IsOnAir]
         WheatstoneIP     = $WheatstoneIP

@@ -35,6 +35,8 @@ function New-BaseRecord
         AutoLogonUser    = ''
         LastLoggedOnUser = ''
         IPAddress        = ''
+        SubnetMask       = ''
+        DefaultGateway   = ''
         AddressType      = ''
         OtherIPAddresses = ''
         WheatstoneIP     = ''

@@ -39,6 +39,8 @@ function Get-MachineInfo
         AutoLogonUser    = $Logon.AutoLogonUser
         LastLoggedOnUser = $Logon.LastLoggedOnUser
         IPAddress        = $NetworkInfo.IPAddress
+        SubnetMask       = $NetworkInfo.SubnetMask
+        DefaultGateway   = $NetworkInfo.DefaultGateway
         AddressType      = $NetworkInfo.AddressType
         OtherIPAddresses = $NetworkInfo.OtherIPAddresses
         WheatstoneIP     = $NetworkInfo.WheatstoneIP

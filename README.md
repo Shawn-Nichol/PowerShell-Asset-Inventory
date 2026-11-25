@@ -54,7 +54,7 @@ The script generates a timestamped CSV containing the following information:
 - C: Drive Size and Free Space (GB)
 - Auto-Logon Enabled and Auto-Logon User
 - Last Logged-On User
-- IP Address
+- IP Address, Subnet Mask and Default Gateway
 - Static IP or DHCP
 - Wheatstone Connectivity
 - Other IP Addresses
@@ -219,7 +219,7 @@ flowchart LR
 
     Inv --> Machine["Get-MachineInfo<br/>details shared by every row"]
     Machine --> Sys["Get-SystemInfo<br/>OS, VM or hardware model, time zone"]
-    Machine --> NetInfo["Get-NetworkInfo<br/>IP addresses, DHCP or Static,<br/>On-Air or Office, Wheatstone IP"]
+    Machine --> NetInfo["Get-NetworkInfo<br/>IP addresses, subnet, gateway, DHCP or Static,<br/>On-Air or Office, Wheatstone IP"]
     Machine --> Bios["Get-BiosInfo<br/>BIOS and serial number"]
     Machine --> Hw["Get-HardwareInfo<br/>CPU, RAM, C: drive"]
     Machine --> Logon["Get-LogonInfo<br/>auto-logon and last user"]
@@ -263,7 +263,7 @@ flowchart LR
 | System | `Get-ComputerInventory` | Audits one computer and returns its rows |
 | System | `Get-MachineInfo` | Collects the details shared by every row |
 | System | `Get-SystemInfo` | Returns the OS, whether it is a VM or physical hardware, and the time zone |
-| System | `Get-NetworkInfo` | Returns the main, Wheatstone and other IPs, DHCP or Static, and On-Air or Office |
+| System | `Get-NetworkInfo` | Returns the main IP with subnet mask and gateway, Wheatstone and other IPs, DHCP or Static, and On-Air or Office |
 | System | `Get-BiosInfo` | Returns the BIOS manufacturer, version, release date and serial number |
 | System | `Get-HardwareInfo` | Returns the CPU, RAM, and C: drive size and free space |
 | System | `Get-LogonInfo` | Returns auto-logon status and user, and the last logged-on user |
