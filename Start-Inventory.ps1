@@ -79,150 +79,49 @@ param
 
 $ErrorActionPreference = 'Stop'
 
-# Load helper functions.
-#   Private\ runs on this computer only.
-#   Remote\  runs on each target, and is also loaded here for shared helpers.
-$PrivatePath = Join-Path -Path $PSScriptRoot -ChildPath 'Private'
-$RemotePath  = Join-Path -Path $PSScriptRoot -ChildPath 'Remote'
+# Load every function in the Functions folder.
+$FunctionPath = Join-Path -Path $PSScriptRoot -ChildPath 'Functions'
 
-foreach ($File in Get-ChildItem -Path $PrivatePath, $RemotePath -Filter '*.ps1')
+foreach ($File in Get-ChildItem -Path $FunctionPath -Filter '*.ps1')
 {
     . $File.FullName
 }
 
-# Package the Remote\ functions into one script block that can be sent to
-# each target. Functions loaded here do not exist in a remote session, so
-# they have to travel with the command.
-$RemoteCode = Get-ChildItem -Path $RemotePath -Filter '*.ps1' |
-    ForEach-Object { Get-Content -Path $_.FullName -Raw }
-
-$RemoteScript = [scriptblock]::Create(
-    "param(`$Settings)`r`n" +
-    ($RemoteCode -join "`r`n") +
-    "`r`nInvoke-RemoteInventory -Settings `$Settings"
-)
+# Functions loaded here do not exist on remote computers, so package them
+# into one script block that is sent along with each remote command.
+$InventoryScript = New-RemoteScript -FunctionPath $FunctionPath
 
 $Settings = Import-InventorySettings -ApplicationsPath $ApplicationsPath -NetworkPath $NetworkPath
 $Targets  = @(Get-TargetComputer -ComputerName $ComputerName -ListPath $ComputerListPath)
 
-if ($Targets.Count -eq 0)
+Write-Host "Checking $($Targets.Count) computer(s)..." -ForegroundColor Cyan
+
+# Step 1: decide how to handle each computer (Local, Ready, Offline, WinRM unavailable).
+$Checked = foreach ($Computer in $Targets)
 {
-    throw "No computers to audit. Check $ComputerListPath or use -ComputerName."
-}
-
-Write-Host "Auditing $($Targets.Count) computer(s)..." -ForegroundColor Cyan
-
-$Records       = [System.Collections.Generic.List[object]]::new()
-$RemoteTargets = [System.Collections.Generic.List[string]]::new()
-
-# Sort targets: audit the local computer directly, skip unreachable ones,
-# and queue the rest for remoting.
-foreach ($Computer in $Targets)
-{
-    if (Test-IsLocalComputer -ComputerName $Computer)
-    {
-        Write-Verbose "$Computer - auditing locally"
-
-        foreach ($Record in & $RemoteScript $Settings)
-        {
-            $Records.Add($Record)
-        }
-
-        continue
-    }
-
-    $WinRMReady = Test-WinRM -ComputerName $Computer
-
-    if (-not $WinRMReady)
-    {
-        if (-not (Test-Connection -ComputerName $Computer -Count 1 -Quiet -ErrorAction SilentlyContinue))
-        {
-            Write-Warning "$Computer - Offline"
-            $Records.Add((New-AuditRecord -Base (New-BaseRecord -ComputerName $Computer) -Notes 'Offline'))
-                continue
-        }
-
-        if ($RepairWinRM)
-        {
-            $WinRMReady = Repair-WinRM -ComputerName $Computer
-        }
-    }
-
-    if (-not $WinRMReady)
-    {
-        Write-Warning "$Computer - WinRM unavailable"
-        $Records.Add((New-AuditRecord -Base (New-BaseRecord -ComputerName $Computer) `
-            -Notes 'WinRM unavailable (run with -RepairWinRM to attempt a fix)'))
-        continue
-    }
-
-    $RemoteTargets.Add($Computer)
-}
-
-# Audit all reachable computers in parallel.
-if ($RemoteTargets.Count -gt 0)
-{
-    Write-Verbose "Running remote audit on $($RemoteTargets.Count) computer(s)"
-
-    $InvokeParams = @{
-        ComputerName  = $RemoteTargets.ToArray()
-        ScriptBlock   = $RemoteScript
-        ArgumentList  = @($Settings)
-        ErrorAction   = 'SilentlyContinue'
-        ErrorVariable = 'RemoteErrors'
-    }
-
-    if ($Credential)
-    {
-        $InvokeParams.Credential = $Credential
-    }
-
-    $RemoteResults = @(Invoke-Command @InvokeParams)
-
-    foreach ($Record in $RemoteResults)
-    {
-        $Records.Add($Record)
-    }
-
-    # Any computer that returned nothing failed to connect or run; add a row
-    # so it does not silently disappear from the report.
-    $Responded = @($RemoteResults | ForEach-Object { $_.PSComputerName } | Sort-Object -Unique)
-
-    foreach ($Computer in $RemoteTargets)
-    {
-        if ($Responded -contains $Computer)
-        {
-            continue
-        }
-
-        $RemoteError = $RemoteErrors |
-            Where-Object {
-                $_.TargetObject -eq $Computer -or
-                ($_.OriginInfo -and $_.OriginInfo.PSComputerName -eq $Computer)
-            } |
-            Select-Object -First 1
-
-        $Message = 'No data returned'
-        if ($RemoteError) { $Message = $RemoteError.Exception.Message }
-
-        Write-Warning "$Computer - $Message"
-        $Records.Add((New-AuditRecord -Base (New-BaseRecord -ComputerName $Computer) -Notes "Error: $Message"))
+    [PSCustomObject]@{
+        ComputerName = $Computer
+        Status       = Get-ComputerStatus -ComputerName $Computer -RepairWinRM:$RepairWinRM
     }
 }
 
-$ReportPath = Export-InventoryReport -Records $Records.ToArray() -OutputPath $OutputPath
+$LocalComputers   = @($Checked | Where-Object Status -eq 'Local')
+$ReadyComputers   = @($Checked | Where-Object Status -eq 'Ready' | ForEach-Object ComputerName)
+$SkippedComputers = @($Checked | Where-Object Status -notin 'Local', 'Ready')
 
-$ProblemComputers = @(
-    $Records |
-        Where-Object { $_.Notes -like 'Offline*' -or $_.Notes -like 'WinRM*' -or $_.Notes -like 'Error:*' } |
-        ForEach-Object { $_.'Server / Workstation Name' } |
-        Sort-Object -Unique
+# Step 2: collect the rows. Every computer produces at least one row.
+$Records = @(
+    $LocalComputers   | ForEach-Object { & $InventoryScript $Settings }
+    $SkippedComputers | ForEach-Object { New-StatusRecord -ComputerName $_.ComputerName -Notes $_.Status }
+
+    Invoke-InventoryRemoting `
+        -ComputerName $ReadyComputers `
+        -ScriptBlock $InventoryScript `
+        -Settings $Settings `
+        -Credential $Credential
 )
 
-Write-Host ''
-Write-Host "Computers         : $($Targets.Count)" -ForegroundColor Cyan
-Write-Host "Need attention    : $($ProblemComputers.Count) (offline, WinRM or errors - see Notes column)" -ForegroundColor Cyan
-Write-Host "Report rows       : $($Records.Count)" -ForegroundColor Cyan
-Write-Host ''
-Write-Host 'CSV exported to:' -ForegroundColor Green
-Write-Host $ReportPath -ForegroundColor Cyan
+# Step 3: export and summarise.
+$ReportPath = Export-InventoryReport -Records $Records -OutputPath $OutputPath
+
+Write-InventorySummary -Records $Records -ComputerCount $Targets.Count -ReportPath $ReportPath

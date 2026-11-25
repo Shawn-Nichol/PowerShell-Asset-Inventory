@@ -11,28 +11,24 @@ function Get-HaspLicenseType
     [CmdletBinding()]
     param()
 
+    # The License Manager page reports "isloc":"1" for a local key.
+    $LicenseTypes = @{ '1' = 'Dedicated HASP'; '0' = 'Network HASP' }
+
     try
     {
-        $Response = Invoke-WebRequest `
+        $Content = (Invoke-WebRequest `
             -Uri 'http://localhost:1947/_int_/tab_dev.html' `
             -UseBasicParsing `
             -TimeoutSec 5 `
-            -ErrorAction Stop
+            -ErrorAction Stop).Content
 
-        if ($Response.Content -match '"isloc":"1"')
-        {
-            return 'Dedicated HASP'
-        }
+        $IsLocal = [regex]::Match($Content, '"isloc":"(\d)"').Groups[1].Value
 
-        if ($Response.Content -match '"isloc":"0"')
-        {
-            return 'Network HASP'
-        }
+        [string]$LicenseTypes[$IsLocal]
     }
     catch
     {
         Write-Verbose "HASP License Manager not reachable: $($_.Exception.Message)"
+        ''
     }
-
-    return ''
 }

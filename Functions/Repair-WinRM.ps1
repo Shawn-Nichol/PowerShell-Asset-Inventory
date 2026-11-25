@@ -17,7 +17,9 @@ function Repair-WinRM
         [string]$ComputerName
     )
 
-    if (-not (Get-Command -Name 'psexec' -ErrorAction SilentlyContinue))
+    $PsExec = Get-Command -Name 'psexec' -ErrorAction SilentlyContinue
+
+    if (-not $PsExec)
     {
         Write-Warning "$ComputerName - Cannot repair WinRM: PsExec was not found on the PATH."
         return $false
@@ -25,21 +27,15 @@ function Repair-WinRM
 
     Write-Warning "$ComputerName - Attempting WinRM repair with PsExec"
 
-    $RemoteCommand =
-        'Enable-PSRemoting -Force; ' +
-        'Set-Service -Name WinRM -StartupType Automatic; ' +
+    $RemoteCommand = @(
+        'Enable-PSRemoting -Force'
+        'Set-Service -Name WinRM -StartupType Automatic'
         'Start-Service -Name WinRM'
+    ) -join '; '
 
-    & psexec "\\$ComputerName" -accepteula -nobanner -s powershell.exe -NoProfile -Command $RemoteCommand *> $null
+    & $PsExec.Source "\\$ComputerName" -accepteula -nobanner -s powershell.exe -NoProfile -Command $RemoteCommand *> $null
 
     Start-Sleep -Seconds 5
 
-    if (Test-WinRM -ComputerName $ComputerName)
-    {
-        Write-Verbose "$ComputerName - WinRM repaired"
-        return $true
-    }
-
-    Write-Warning "$ComputerName - WinRM repair failed"
-    return $false
+    Test-WinRM -ComputerName $ComputerName
 }

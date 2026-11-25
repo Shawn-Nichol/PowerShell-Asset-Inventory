@@ -87,16 +87,17 @@ Reports are saved to the `Output` folder as `AssetInventory-<date>_<time>.csv`. 
 ## Project Structure
 
 ```
-Start-Inventory.ps1        Entry point: parameters, target checks, parallel remoting, export
+Start-Inventory.ps1        Entry point: check each computer, collect rows, export
 Config\
   Applications.psd1        Applications to track and how to describe them
   Network.example.psd1     Template for environment-specific subnets
   Computers.example.txt    Template for the computer list
-Private\                   Functions that run on the computer starting the inventory
-Remote\                    Functions sent to and run on each target computer
+Functions\                 One small function per file
 ```
 
-Settings are PowerShell data files (`.psd1`) loaded with `Import-PowerShellDataFile`, which reads them as data and never executes them. The `Remote` functions are packaged into a single script block and sent with `Invoke-Command`, so nothing needs to be installed on the target computers, and all reachable targets are audited in parallel.
+`Start-Inventory.ps1` reads as three steps: work out the status of each computer (local, ready, offline or WinRM unavailable), collect the rows, then export. Each function does one job, and the code uses pipelines, lookup tables and early returns instead of nested if/else blocks.
+
+Settings are PowerShell data files (`.psd1`) loaded with `Import-PowerShellDataFile`, which reads them as data and never executes them. The functions are packaged into a single script block and sent with `Invoke-Command`, so nothing needs to be installed on the target computers, and all reachable targets are audited in parallel.
 
 ## Why I Built It
 

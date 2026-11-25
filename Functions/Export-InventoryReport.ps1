@@ -14,10 +14,8 @@ function Export-InventoryReport
         [string]$OutputPath
     )
 
-    if (-not (Test-Path -Path $OutputPath))
-    {
-        New-Item -ItemType Directory -Path $OutputPath -Force | Out-Null
-    }
+    # -Force returns the folder if it already exists, so no check is needed.
+    New-Item -ItemType Directory -Path $OutputPath -Force | Out-Null
 
     $FileName = 'AssetInventory-{0}.csv' -f (Get-Date -Format 'yyyy-MM-dd_HHmm')
     $FilePath = Join-Path -Path $OutputPath -ChildPath $FileName
@@ -28,5 +26,5 @@ function Export-InventoryReport
         Select-Object -Property * -ExcludeProperty PSComputerName, RunspaceId, PSShowComputerName |
         Export-Csv -Path $FilePath -NoTypeInformation
 
-    return $FilePath
+    $FilePath
 }

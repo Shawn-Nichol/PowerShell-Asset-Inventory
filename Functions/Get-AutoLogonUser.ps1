@@ -11,10 +11,5 @@ function Get-AutoLogonUser
         -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon' `
         -ErrorAction SilentlyContinue
 
-    if ($Winlogon -and $Winlogon.DefaultUserName)
-    {
-        return [string]$Winlogon.DefaultUserName
-    }
-
-    return ''
+    [string]$Winlogon.DefaultUserName
 }

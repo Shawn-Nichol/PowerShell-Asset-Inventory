@@ -20,23 +20,15 @@ function Get-InstalledApplication
         'HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
     )
 
-    $Programs = Get-ItemProperty -Path $UninstallKeys -ErrorAction SilentlyContinue |
-        Where-Object { $_.DisplayName }
-
-    foreach ($Program in $Programs)
-    {
-        $Definition = Find-ApplicationDefinition `
-            -DisplayName $Program.DisplayName `
-            -Applications $Applications
-
-        if ($Definition)
-        {
+    Get-ItemProperty -Path $UninstallKeys -ErrorAction SilentlyContinue |
+        Where-Object DisplayName |
+        ForEach-Object {
             [PSCustomObject]@{
-                DisplayName     = [string]$Program.DisplayName
-                DisplayVersion  = [string]$Program.DisplayVersion
-                InstallLocation = [string]$Program.InstallLocation
-                Definition      = $Definition
+                DisplayName     = [string]$_.DisplayName
+                DisplayVersion  = [string]$_.DisplayVersion
+                InstallLocation = [string]$_.InstallLocation
+                Definition      = Find-ApplicationDefinition -DisplayName $_.DisplayName -Applications $Applications
             }
-        }
-    }
+        } |
+        Where-Object Definition
 }

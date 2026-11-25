@@ -11,12 +11,14 @@ function Test-IsLocalComputer
         [string]$ComputerName
     )
 
-    $LocalNames = @('.', 'localhost', '127.0.0.1', '::1', $env:COMPUTERNAME)
+    $LocalNames = @(
+        '.'
+        'localhost'
+        '127.0.0.1'
+        '::1'
+        $env:COMPUTERNAME
+        "$env:COMPUTERNAME.$env:USERDNSDOMAIN"
+    )
 
-    if ($env:USERDNSDOMAIN)
-    {
-        $LocalNames += "$env:COMPUTERNAME.$env:USERDNSDOMAIN"
-    }
-
-    return $LocalNames -contains $ComputerName
+    $LocalNames -contains $ComputerName
 }
