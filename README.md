@@ -65,7 +65,8 @@ Requirements: Windows PowerShell 5.1 or later, WinRM enabled on target computers
 1. Copy `Config\Computers.example.txt` to `Config\Computers.txt` and list your hostnames, one per line.
 2. Copy `Config\Network.example.psd1` to `Config\Network.psd1` and set your subnets.
 3. Review `Config\Applications.psd1` and add or describe the applications you want to track.
-4. Run the inventory:
+4. Optional: for applications you don't want published, such as security tools, copy `Config\Applications.local.example.psd1` to `Config\Applications.local.psd1` and add them there. The format is the same, and its entries are checked first.
+5. Run the inventory:
 
 ```powershell
 # Audit every computer in Config\Computers.txt
@@ -83,7 +84,7 @@ Get-Help .\Start-Inventory.ps1 -Full
 
 Reports are saved to the `Output` folder as `AssetInventory-<date>_<time>.csv`. Every target appears in the report; computers that could not be audited get a row explaining why (Offline, WinRM unavailable, or the error message).
 
-`Computers.txt`, `Network.psd1` and `Output\` are git-ignored, so hostnames, internal subnets and reports are never committed.
+`Computers.txt`, `Network.psd1`, `Applications.local.psd1` and `Output\` are git-ignored, so hostnames, internal subnets, privately tracked applications and reports are never committed.
 
 ## Project Structure
 
@@ -91,6 +92,8 @@ Reports are saved to the `Output` folder as `AssetInventory-<date>_<time>.csv`. 
 Start-Inventory.ps1        Entry point: check each computer, collect rows, export
 Config\
   Applications.psd1        Applications to track and how to describe them
+  Applications.local.example.psd1
+                           Template for privately tracked applications (git-ignored copy)
   Network.example.psd1     Template for environment-specific subnets
   Computers.example.txt    Template for the computer list
 Functions\
@@ -117,6 +120,7 @@ flowchart TD
 
     subgraph Config["Config folder"]
         Apps[("Applications.psd1")]
+        LocalApps[("Applications.local.psd1<br/>optional, git-ignored")]
         Net[("Network.psd1")]
         List[("Computers.txt")]
     end
@@ -149,6 +153,7 @@ flowchart TD
 
     Start --> Setup
     Apps --> Import
+    LocalApps --> Import
     Net --> Import
     List --> Targets
     Import --> Default
@@ -210,7 +215,7 @@ flowchart LR
 
 | Folder | Function | What it does |
 |---|---|---|
-| Setup | `Import-InventorySettings` | Loads `Applications.psd1` and `Network.psd1` and fills in defaults |
+| Setup | `Import-InventorySettings` | Loads `Applications.psd1`, the optional `Applications.local.psd1` and `Network.psd1`, and fills in defaults |
 | Setup | `Get-TargetComputer` | Returns computers from `-ComputerName`, `Computers.txt`, or this computer |
 | Setup | `Get-ValueOrDefault` | Returns a value, or a fallback when it is empty |
 | Remoting | `New-RemoteScript` | Packages the Functions folder into one script block for remoting |

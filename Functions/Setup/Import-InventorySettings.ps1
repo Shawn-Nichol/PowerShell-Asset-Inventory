@@ -2,12 +2,18 @@ function Import-InventorySettings
 {
     <#
     .SYNOPSIS
-        Loads the application list and network settings into one hashtable.
+        Loads the application lists and network settings into one hashtable.
 
     .DESCRIPTION
         Settings are PowerShell data files (.psd1), read with
         Import-PowerShellDataFile. Unlike a .ps1 config, a data file is never
         executed, so it cannot be used to run code.
+
+        Applications come from two files:
+          Applications.psd1        public list, committed to the repository
+          Applications.local.psd1  private list, git-ignored (optional)
+        Local entries are checked first, so they take priority. Use the local
+        file for anything that should not be published, such as security tools.
 
         Every application definition is filled in with defaults here, so the
         rest of the code can use the values directly without checking them.
@@ -19,16 +25,28 @@ function Import-InventorySettings
         [string]$ApplicationsPath,
 
         [Parameter(Mandatory)]
+        [string]$LocalApplicationsPath,
+
+        [Parameter(Mandatory)]
         [string]$NetworkPath
     )
 
-    $ApplicationData = Import-PowerShellDataFile -Path $ApplicationsPath
+    $PublicApplications = (Import-PowerShellDataFile -Path $ApplicationsPath).Applications
 
-    $Unnamed = @($ApplicationData.Applications | Where-Object { -not $_.Name })
+    # Get-Item returns nothing when the local file does not exist, so the
+    # import is skipped and only the public list is used.
+    $LocalApplications = Get-Item -Path $LocalApplicationsPath -ErrorAction SilentlyContinue |
+        ForEach-Object { (Import-PowerShellDataFile -Path $_.FullName).Applications }
 
-    if ($Unnamed.Count -gt 0) { throw "Every application in $ApplicationsPath needs a Name." }
+    $AllDefinitions = @(@($LocalApplications) + @($PublicApplications) | Where-Object { $_ })
 
-    $Applications = foreach ($Definition in $ApplicationData.Applications)
+    Write-Verbose "Loaded $(@($LocalApplications | Where-Object { $_ }).Count) local and $(@($PublicApplications).Count) public application definitions"
+
+    $Unnamed = @($AllDefinitions | Where-Object { -not $_.Name })
+
+    if ($Unnamed.Count -gt 0) { throw 'Every application definition needs a Name.' }
+
+    $Applications = foreach ($Definition in $AllDefinitions)
     {
         $IsDescribed = [bool]$Definition.Functionality
         $DefinitionNotes = @{ $true = ''; $false = 'Application definition required' }

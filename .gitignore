@@ -2,6 +2,7 @@
 Config/Computers.txt
 Config/BroadcastComputers.txt
 Config/Network.psd1
+Config/Applications.local.psd1
 
 # Generated reports
 Output/

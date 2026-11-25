@@ -28,6 +28,11 @@
 .PARAMETER ApplicationsPath
     Data file listing the applications to track. Defaults to Config\Applications.psd1.
 
+.PARAMETER LocalApplicationsPath
+    Optional, git-ignored data file with applications that should not be
+    published (for example security tools). Same format as Applications.psd1;
+    its entries are checked first. Defaults to Config\Applications.local.psd1.
+
 .PARAMETER NetworkPath
     Data file with environment-specific subnets. Defaults to Config\Network.psd1.
 
@@ -68,6 +73,8 @@ param
 
     [string]$ApplicationsPath = (Join-Path -Path $PSScriptRoot -ChildPath 'Config\Applications.psd1'),
 
+    [string]$LocalApplicationsPath = (Join-Path -Path $PSScriptRoot -ChildPath 'Config\Applications.local.psd1'),
+
     [string]$NetworkPath = (Join-Path -Path $PSScriptRoot -ChildPath 'Config\Network.psd1'),
 
     [string]$OutputPath = (Join-Path -Path $PSScriptRoot -ChildPath 'Output'),
@@ -91,7 +98,10 @@ foreach ($File in Get-ChildItem -Path $FunctionPath -Filter '*.ps1' -Recurse)
 # into one script block that is sent along with each remote command.
 $InventoryScript = New-RemoteScript -FunctionPath $FunctionPath
 
-$Settings = Import-InventorySettings -ApplicationsPath $ApplicationsPath -NetworkPath $NetworkPath
+$Settings = Import-InventorySettings `
+    -ApplicationsPath $ApplicationsPath `
+    -LocalApplicationsPath $LocalApplicationsPath `
+    -NetworkPath $NetworkPath
 $Targets  = @(Get-TargetComputer -ComputerName $ComputerName -ListPath $ComputerListPath)
 
 Write-Host "Checking $($Targets.Count) computer(s)..." -ForegroundColor Cyan
