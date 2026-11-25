@@ -1,0 +1,7 @@
+# Computer list
+# Copy this file to Computers.txt and add one hostname per line.
+# Computers.txt is git-ignored so real hostnames are never committed.
+# Lines starting with # and blank lines are ignored.
+
+WORKSTATION-01
+SERVER-01

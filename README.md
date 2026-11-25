@@ -57,6 +57,47 @@ The script generates a timestamped CSV containing the following information:
 
 The resulting report provides a clean, one-row-per-application inventory that can be used for audits, software lifecycle planning, licensing reviews, infrastructure assessments, and migration projects.
 
+## Getting Started
+
+Requirements: Windows PowerShell 5.1 or later, WinRM enabled on target computers, and admin rights on the targets. PsExec is only needed for `-RepairWinRM`.
+
+1. Copy `Config\Computers.example.txt` to `Config\Computers.txt` and list your hostnames, one per line.
+2. Copy `Config\Network.example.psd1` to `Config\Network.psd1` and set your subnets.
+3. Review `Config\Applications.psd1` and add or describe the applications you want to track.
+4. Run the inventory:
+
+```powershell
+# Audit every computer in Config\Computers.txt
+.\Start-Inventory.ps1
+
+# Audit specific computers and show progress details
+.\Start-Inventory.ps1 -ComputerName STUDIO-01, STUDIO-02 -Verbose
+
+# Use alternate credentials and try to fix WinRM where it is not responding
+.\Start-Inventory.ps1 -RepairWinRM -Credential (Get-Credential)
+
+# Full parameter help
+Get-Help .\Start-Inventory.ps1 -Full
+```
+
+Reports are saved to the `Output` folder as `AssetInventory-<date>_<time>.csv`. Every target appears in the report; computers that could not be audited get a row explaining why (Offline, WinRM unavailable, or the error message).
+
+`Computers.txt`, `Network.psd1` and `Output\` are git-ignored, so hostnames, internal subnets and reports are never committed.
+
+## Project Structure
+
+```
+Start-Inventory.ps1        Entry point: parameters, target checks, parallel remoting, export
+Config\
+  Applications.psd1        Applications to track and how to describe them
+  Network.example.psd1     Template for environment-specific subnets
+  Computers.example.txt    Template for the computer list
+Private\                   Functions that run on the computer starting the inventory
+Remote\                    Functions sent to and run on each target computer
+```
+
+Settings are PowerShell data files (`.psd1`) loaded with `Import-PowerShellDataFile`, which reads them as data and never executes them. The `Remote` functions are packaged into a single script block and sent with `Invoke-Command`, so nothing needs to be installed on the target computers, and all reachable targets are audited in parallel.
+
 ## Why I Built It
 
 I needed a reliable way to document application deployments, licensing dependencies, and workstation configurations across distributed Windows environments. Manual audits were time-consuming, difficult to maintain, and often inconsistent.

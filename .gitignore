@@ -1,5 +1,7 @@
-# Real computer list (internal hostnames) - never commit
+# Environment-specific files (internal hostnames and subnets) - never commit
+Config/Computers.txt
 Config/BroadcastComputers.txt
+Config/Network.psd1
 
 # Generated reports
 Output/
