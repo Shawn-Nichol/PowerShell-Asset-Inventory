@@ -10,6 +10,13 @@ function Export-Audit
         $PSScriptRoot `
         "..\Output\ESI-Audit-$Date.csv"
 
+    $OutputDir = Split-Path $ExportPath -Parent
+
+    if (-not (Test-Path $OutputDir))
+    {
+        New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null
+    }
+
     $Results |
     Select-Object `
         "Application Name",
