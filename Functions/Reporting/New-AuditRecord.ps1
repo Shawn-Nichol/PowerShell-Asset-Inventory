@@ -31,6 +31,7 @@ function New-AuditRecord
         # Computer
         'Server / Workstation Name'                     = $Base.ComputerName
         'On-Air or Office'                              = $Base.Location
+        'Time Zone'                                     = $Base.TimeZone
         'OS'                                            = $Base.OS
         'VM / BM / HW'                                  = $Base.MachineType
         'Serial Number'                                 = $Base.SerialNumber

@@ -44,6 +44,7 @@ The script generates a timestamped CSV containing the following information:
 
 - Computer Name
 - On-Air or Office Location
+- Time Zone
 - Operating System
 - Hardware Type (VM or physical model)
 - Serial Number
@@ -204,7 +205,7 @@ flowchart LR
     Inv(["Get-ComputerInventory"])
 
     Inv --> Machine["Get-MachineInfo<br/>details shared by every row"]
-    Machine --> Sys["Get-SystemInfo<br/>OS, VM or hardware model"]
+    Machine --> Sys["Get-SystemInfo<br/>OS, VM or hardware model, time zone"]
     Machine --> NetInfo["Get-NetworkInfo<br/>DHCP or Static, On-Air or Office, Wheatstone IP"]
     Machine --> Bios["Get-BiosInfo<br/>BIOS and serial number"]
     Machine --> Hw["Get-HardwareInfo<br/>CPU, RAM, C: drive"]
@@ -248,7 +249,7 @@ flowchart LR
 | Remoting | `Invoke-InventoryRemoting` | Runs the inventory on all ready computers in parallel |
 | System | `Get-ComputerInventory` | Audits one computer and returns its rows |
 | System | `Get-MachineInfo` | Collects the details shared by every row |
-| System | `Get-SystemInfo` | Returns the OS and whether it is a VM or physical hardware |
+| System | `Get-SystemInfo` | Returns the OS, whether it is a VM or physical hardware, and the time zone |
 | System | `Get-NetworkInfo` | Returns DHCP or Static, On-Air or Office, and the Wheatstone IP |
 | System | `Get-BiosInfo` | Returns the BIOS manufacturer, version, release date and serial number |
 | System | `Get-HardwareInfo` | Returns the CPU, RAM, and C: drive size and free space |

@@ -24,6 +24,7 @@ function Get-MachineInfo
 
     $Details = @{
         Location         = $NetworkInfo.Location
+        TimeZone         = $System.TimeZone
         OS               = $System.OS
         MachineType      = $System.MachineType
         SerialNumber     = $Bios.SerialNumber

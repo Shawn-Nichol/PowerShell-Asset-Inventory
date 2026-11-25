@@ -20,6 +20,7 @@ function New-BaseRecord
     $Base = @{
         ComputerName     = $ComputerName
         Location         = ''
+        TimeZone         = ''
         OS               = ''
         MachineType      = ''
         SerialNumber     = ''
