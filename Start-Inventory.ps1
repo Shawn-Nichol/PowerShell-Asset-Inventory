@@ -79,10 +79,10 @@ param
 
 $ErrorActionPreference = 'Stop'
 
-# Load every function in the Functions folder.
+# Load every function in the Functions folder and its subfolders.
 $FunctionPath = Join-Path -Path $PSScriptRoot -ChildPath 'Functions'
 
-foreach ($File in Get-ChildItem -Path $FunctionPath -Filter '*.ps1')
+foreach ($File in Get-ChildItem -Path $FunctionPath -Filter '*.ps1' -Recurse)
 {
     . $File.FullName
 }

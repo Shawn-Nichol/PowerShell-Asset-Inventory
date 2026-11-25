@@ -2,8 +2,8 @@ function New-RemoteScript
 {
     <#
     .SYNOPSIS
-        Packages every function in the Functions folder into one script block
-        that runs Get-ComputerInventory.
+        Packages every function in the Functions folder (and subfolders)
+        into one script block that runs Get-ComputerInventory.
 
     .DESCRIPTION
         Functions loaded in this session do not exist on remote computers.
@@ -17,7 +17,7 @@ function New-RemoteScript
         [string]$FunctionPath
     )
 
-    $FunctionCode = Get-ChildItem -Path $FunctionPath -Filter '*.ps1' |
+    $FunctionCode = Get-ChildItem -Path $FunctionPath -Filter '*.ps1' -Recurse |
         ForEach-Object { Get-Content -Path $_.FullName -Raw }
 
     $ScriptText = @(
