@@ -24,9 +24,12 @@ A PowerShell-based asset inventory and application auditing tool for Windows env
   - WideOrbit
   - Various encoder, automation, and support applications
 - Hardware and virtualization detection (VMware, Hyper-V, and physical hardware).
+- BIOS details and serial number, CPU, RAM, and C: drive size and free space.
+- Security settings: Secure Boot, TPM, BitLocker, RDP, SMBv1, Windows Firewall and pending reboots.
+- TeamViewer version and ID discovery.
 - Network classification and IP discovery.
 - Sentinel/HASP license discovery and reporting.
-- Auto-logon account identification.
+- Auto-logon status and account, plus the last logged-on user.
 - Wheatstone network interface detection.
 - Executable and application version discovery.
 - CSV report generation for asset management and compliance tracking.
@@ -43,20 +46,32 @@ The script generates a timestamped CSV containing the following information:
 - On-Air or Office Location
 - Operating System
 - Hardware Type (VM or physical model)
-- Primary User or Service Account
+- Serial Number
+- BIOS Manufacturer, Version and Release Date
+- CPU
+- RAM (GB)
+- C: Drive Size and Free Space (GB)
+- Auto-Logon Enabled and Auto-Logon User
+- Last Logged-On User
 - Static IP or DHCP
 - Wheatstone Connectivity
+- Secure Boot, TPM and BitLocker (C:) Status
+- RDP and SMBv1 Status
+- Windows Firewall Profiles
+- Reboot Pending
 - Application Name
 - Software Version
 - Functionality
 - End User / Server / Service Classification
 - Service or Application Type
 - Executable Name
-- Licensing Information
-- HASP ID
+- Licensing Information and HASP ID
+- TeamViewer ID
 - Notes
 
-Rows are sorted by computer, then application. The resulting report provides a clean, one-row-per-application inventory that can be used for audits, software lifecycle planning, licensing reviews, infrastructure assessments, and migration projects.
+Rows are sorted by computer, then application. Computer details repeat on each of that computer's rows, so every row can be filtered on its own.
+
+The report can include TeamViewer IDs and user names, so treat it as sensitive and store it accordingly. The resulting report provides a clean, one-row-per-application inventory that can be used for audits, software lifecycle planning, licensing reviews, infrastructure assessments, and migration projects.
 
 ## Getting Started
 
@@ -99,8 +114,9 @@ Config\
 Functions\
   Setup\                   Settings, target list, shared helpers
   Remoting\                Computer status checks, WinRM, parallel remoting
-  System\                  Machine details: OS, hardware, network, user
-  Applications\            Installed applications, executables, Burli and HASP licensing
+  System\                  Machine details: OS, BIOS, hardware, network, users
+  Security\                Secure Boot, TPM, BitLocker, RDP, SMBv1, firewall, pending reboot
+  Applications\            Installed applications, executables, Burli licensing, TeamViewer ID
   Reporting\               Report rows, CSV export, summary
 ```
 
@@ -190,11 +206,17 @@ flowchart LR
     Inv --> Machine["Get-MachineInfo<br/>details shared by every row"]
     Machine --> Sys["Get-SystemInfo<br/>OS, VM or hardware model"]
     Machine --> NetInfo["Get-NetworkInfo<br/>DHCP or Static, On-Air or Office, Wheatstone IP"]
-    Machine --> User["Get-AutoLogonUser"]
+    Machine --> Bios["Get-BiosInfo<br/>BIOS and serial number"]
+    Machine --> Hw["Get-HardwareInfo<br/>CPU, RAM, C: drive"]
+    Machine --> Logon["Get-LogonInfo<br/>auto-logon and last user"]
+    Machine --> Sec["Get-SecurityInfo"]
+    Sec --> SecChecks["Get-SecureBootStatus, Get-TpmStatus,<br/>Get-BitLockerStatus, Get-RdpStatus,<br/>Get-Smb1Status, Get-FirewallStatus,<br/>Get-RebootPending"]
     Machine --> Base["New-BaseRecord"]
 
     Inv --> Burli["Get-BurliInfo"]
     Burli --> Hasp["Get-HaspLicenseType<br/>asks the local HASP License Manager"]
+
+    Inv --> TV["Get-TeamViewerInfo<br/>TeamViewer ID"]
 
     Inv --> Proc["Get-RunningProcess"]
 
@@ -228,8 +250,19 @@ flowchart LR
 | System | `Get-MachineInfo` | Collects the details shared by every row |
 | System | `Get-SystemInfo` | Returns the OS and whether it is a VM or physical hardware |
 | System | `Get-NetworkInfo` | Returns DHCP or Static, On-Air or Office, and the Wheatstone IP |
-| System | `Get-AutoLogonUser` | Returns the auto-logon user from Winlogon |
+| System | `Get-BiosInfo` | Returns the BIOS manufacturer, version, release date and serial number |
+| System | `Get-HardwareInfo` | Returns the CPU, RAM, and C: drive size and free space |
+| System | `Get-LogonInfo` | Returns auto-logon status and user, and the last logged-on user |
 | System | `Get-RunningProcess` | Lists running processes and their paths |
+| Security | `Get-SecurityInfo` | Collects all the security settings for a computer |
+| Security | `Get-SecureBootStatus` | Returns Enabled, Disabled or Not supported (legacy BIOS) |
+| Security | `Get-TpmStatus` | Returns the TPM version and whether it is enabled |
+| Security | `Get-BitLockerStatus` | Returns BitLocker protection on the C: drive |
+| Security | `Get-RdpStatus` | Returns whether Remote Desktop connections are allowed |
+| Security | `Get-Smb1Status` | Returns whether the outdated SMBv1 protocol is enabled |
+| Security | `Get-FirewallStatus` | Returns the state of each Windows Firewall profile |
+| Security | `Get-RebootPending` | Returns whether Windows is waiting for a restart |
+| Applications | `Get-TeamViewerInfo` | Returns the TeamViewer ID from the registry |
 | Applications | `Get-BurliInfo` | Returns whether Burli is installed and its HASP ID |
 | Applications | `Get-HaspLicenseType` | Returns Dedicated or Network HASP |
 | Applications | `Get-InstalledApplication` | Finds installed programs that match a tracked application |

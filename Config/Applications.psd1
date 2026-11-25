@@ -68,6 +68,13 @@
             UserType      = 'End User'
             ServiceType   = 'Application'
         }
+        @{
+            Name          = 'TeamViewer'
+            Functionality = 'Remote Access'
+            UserType      = 'End User'
+            ServiceType   = 'Application'
+            Executable    = 'TeamViewer.exe'
+        }
 
         # Tracked, but not yet described
         @{ Name = 'WideOrbit' }

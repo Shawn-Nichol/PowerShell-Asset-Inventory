@@ -2,7 +2,11 @@ function New-BaseRecord
 {
     <#
     .SYNOPSIS
-        Creates the machine-level details shared by every row for a computer.
+        Creates the computer-level details shared by every row for a computer.
+
+    .DESCRIPTION
+        Every key starts empty, so a computer that could not be audited still
+        produces a complete row. Values in -Details replace the empty defaults.
     #>
     [CmdletBinding()]
     param
@@ -10,21 +14,40 @@ function New-BaseRecord
         [Parameter(Mandatory)]
         [string]$ComputerName,
 
-        [string]$OS = '',
-        [string]$PrimaryUser = '',
-        [string]$MachineType = '',
-        [string]$Location = '',
-        [string]$AddressType = '',
-        [string]$WheatstoneIP = ''
+        [hashtable]$Details = @{}
     )
 
-    @{
-        ComputerName = $ComputerName
-        OS           = $OS
-        PrimaryUser  = $PrimaryUser
-        MachineType  = $MachineType
-        Location     = $Location
-        AddressType  = $AddressType
-        WheatstoneIP = $WheatstoneIP
+    $Base = @{
+        ComputerName     = $ComputerName
+        Location         = ''
+        OS               = ''
+        MachineType      = ''
+        SerialNumber     = ''
+        BiosManufacturer = ''
+        BiosVersion      = ''
+        BiosReleaseDate  = ''
+        CPU              = ''
+        RamGB            = ''
+        DiskSizeGB       = ''
+        DiskFreeGB       = ''
+        AutoLogonEnabled = ''
+        AutoLogonUser    = ''
+        LastLoggedOnUser = ''
+        AddressType      = ''
+        WheatstoneIP     = ''
+        SecureBoot       = ''
+        Tpm              = ''
+        BitLocker        = ''
+        Rdp              = ''
+        Smb1             = ''
+        Firewall         = ''
+        RebootPending    = ''
     }
+
+    foreach ($Key in $Details.Keys)
+    {
+        $Base[$Key] = [string]$Details[$Key]
+    }
+
+    $Base
 }

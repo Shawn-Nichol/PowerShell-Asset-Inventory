@@ -25,16 +25,21 @@ function Get-ComputerInventory
     try
     {
         $Base          = Get-MachineInfo -Network $Settings.Network
-        $Burli         = Get-BurliInfo
         $Processes     = @(Get-RunningProcess)
         $InstalledApps = @(Get-InstalledApplication -Applications $Settings.Applications)
 
+        # Extra details for specific applications, keyed by definition Name.
+        $AppDetails = @{
+            'Burli'      = Get-BurliInfo
+            'TeamViewer' = Get-TeamViewerInfo
+        }
+
         $Records = @(
             $InstalledApps | ForEach-Object {
-                New-ApplicationRecord -Base $Base -Application $_ -Burli $Burli -RunningProcesses $Processes
+                New-ApplicationRecord -Base $Base -Application $_ -AppDetails $AppDetails -RunningProcesses $Processes
             }
 
-            New-BurliRegistryRecord -Base $Base -Burli $Burli -InstalledApps $InstalledApps -Applications $Settings.Applications
+            New-BurliRegistryRecord -Base $Base -Burli $AppDetails.Burli -InstalledApps $InstalledApps -Applications $Settings.Applications
         )
 
         if ($Records.Count -eq 0) { return New-AuditRecord -Base $Base -Notes 'No tracked applications found' }
