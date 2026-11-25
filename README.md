@@ -173,7 +173,7 @@ flowchart TD
 `Get-ComputerInventory` is the function sent to every target. It gathers the machine details once, then builds one row per tracked application. If nothing matches it returns a "No tracked applications found" row, and if anything fails it returns an error row, so every computer appears in the report.
 
 ```mermaid
-flowchart TD
+flowchart LR
     Inv(["Get-ComputerInventory"])
 
     Inv --> Machine["Get-MachineInfo<br/>details shared by every row"]
